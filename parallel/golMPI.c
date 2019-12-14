@@ -121,18 +121,22 @@ int main(int argc, char*argv[])
                 MPI_Send(&procSlice, sliceSize,MPI_INT,  rnkcnt,1,MPI_COMM_WORLD);
             }
         }
-    }
+    }// end master initializing
+    printf("rnk %d ---after mster", rank);
     
     if(rank!=MASTER)
     {
+        printf("rnk %d -A--after mster", rank);
         MPI_Recv(&sv, sizeof(sv), MPI_BYTE, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
     }
     int rnkSlice[sv.slicecnt][sv.n];  
     int sliceSize = sv.n * sv.slicecnt;
     if(rank!=MASTER){
+        printf("rnk %d -B--after mster", rank);
         MPI_Recv(&rnkSlice, sliceSize , MPI_INT, 0, 1, MPI_COMM_WORLD,&status);
     }else
     {   
+        printf("rnk %d -B--after mster", rank);
         int ii,jj;
         for(ii=0; ii<sv.slicecnt;ii++ )
         {
