@@ -37,8 +37,6 @@ int main(int argc, char*argv[])
     MPI_Status status;
     MPI_Comm_size(MPI_COMM_WORLD, &num_proc);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank    );
-    struct slicevars sv ;
-    int **msterData;
     if(rank ==MASTER)
     {
         /*
@@ -66,10 +64,11 @@ int main(int argc, char*argv[])
         }
         printf( "- 1 - \n");
         //build arrays
-        int lifArr [m][n];
+        
         int ncntr, mcntr;
         srand(time(NULL));
         printf( "- 2 - \n");
+        int lifArr [m][n];
         for(mcntr=0; mcntr < m ;mcntr++  )
         {
             for( ncntr=0;ncntr<n;ncntr++)
@@ -77,7 +76,7 @@ int main(int argc, char*argv[])
                 lifArr [m][n] = random01();
             }
         }  
-        //struct slicevars sv;
+        struct slicevars sv;
         sv.k       =k       ;
         sv.m       =m       ;
         sv.n       =n       ;
@@ -85,35 +84,43 @@ int main(int argc, char*argv[])
         // send this to all threads
         int rnkcnt;
         printf( "- 3 - \n");
-        for(rnkcnt=1;rnkcnt< num_proc;++rnkcnt)
+        for(rnkcnt=0;rnkcnt< num_proc;++rnkcnt)
         {
             MPI_Send(&sv, sizeof(sv), MPI_BYTE, rnkcnt, 0, MPI_COMM_WORLD);
             printf( "- 4A - \n");
         }
+         
+        
+        
+        
+        
+        }
+            MPI_Recv(&sv, sizeof(sv), MPI_BYTE, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+        
+        {
+            int rnkcnt;
         // chop up the array and send it
         int procSlice [slicecnt][n];
-        msterData = (int**)  malloc(sizeof( int *) * slicecnt + sizeof(int) *n * slicecnt);
-        
-        
-        
         printf( "- 5A - \n");
+         int lifArr [m][n];
+         int mcntr,ncntr;
+        for(mcntr=0; mcntr < m ;mcntr++  )
+        {
+            for( ncntr=0;ncntr<n;ncntr++)
+            {
+                lifArr [m][n] = random01();
+            }
+        }  
         for(rnkcnt=0;rnkcnt< num_proc;++rnkcnt)
         {
             int slcntr;
             for(slcntr=0;slcntr<slicecnt;slcntr++)
             {
+                int ncntr;
                 for( ncntr=0;ncntr<n;ncntr++)
                 {
-                    if( rnkcnt!=0)
-                    {
-                        procSlice [slcntr][ncntr] = lifArr[slcntr + (rnkcnt * slicecnt) ][ncntr];
-                    }else
-                    {
-                        msterData[slcntr][ncntr] = lifArr[slcntr + (rnkcnt * slicecnt) ][ncntr];
-                    }
-                    
+                    procSlice [slcntr][ncntr] = lifArr[slcntr + (rnkcnt * slicecnt) ][ncntr];
                 }
-
             }
             int sliceSize = n* slicecnt;
             printf( "- MPI_Send(&procSlice, sliceSize,MPI_INT,  rnkcnt,1,MPI_COMM_WORLD); - \n");
@@ -121,28 +128,10 @@ int main(int argc, char*argv[])
         }
     }
     
-    if(rank!=MASTER)
-    {
-        MPI_Recv(&sv, sizeof(sv), MPI_BYTE, 0, 0, MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-    }
+    
     int rnkSlice[sv.slicecnt][sv.n];  
     int sliceSize = sv.n * sv.slicecnt;
-    if(rank!=MASTER){
-        MPI_Recv(&rnkSlice, sliceSize , MPI_INT, 0, 1, MPI_COMM_WORLD,&status);
-    }else
-    {   
-        int ii,jj;
-        for(ii=0; ii<sv.slicecnt;ii++ )
-        {
-            for(jj=0; jj<sv.n;jj++ )
-            {
-                rnkSlice[ii][jj]  =msterData[ii][jj];  
-
-            }
-        }
-
-    }
-    
+    MPI_Recv(&rnkSlice, sliceSize , MPI_INT, 0, 1, MPI_COMM_WORLD,&status);
     // run the game
     int lifecyclecnt =0;
     int sendDown[n]; // send bottom to rank belo
@@ -231,35 +220,26 @@ int main(int argc, char*argv[])
         {
             if (rank==MASTER) 
 	        {
-            // display master then rest then get rest
+            // display then get rest
                 int r,c =0;
                 for(;r<sv.slicecnt;++r)
                 {
                     for(;c<sv.n;++c)
                     {
-                        printf("%d" ,rnkSlice[r][c]);// output here
+                    // output here
                     }
-                    printf("\n");
                 }
-                int irnkcnt=1;
+                int irnkcnt=0;
                 for(;irnkcnt<num_proc;++irnkcnt )
                 {
                     int recvSlice[sv.slicecnt][sv.n];  
                     MPI_Recv(&recvSlice,sv.n * sv.slicecnt,MPI_INT, irnkcnt,1,MPI_COMM_WORLD,&status);
-                    // display the rest
-                    for(;r<sv.slicecnt;++r)
-                {
-                    for(;c<sv.n;++c)
-                    {
-                        printf("%d" ,recvSlice[r][c]);// output here
-                    }
-                    printf("\n");
-                }
                 }
 
             }else
             {
-                MPI_Send(&rnkSlice, sv.n * sv.slicecnt,MPI_INT,  MASTER,1,MPI_COMM_WORLD);
+            // your not master
+            // send to master
             }
         }
     }
