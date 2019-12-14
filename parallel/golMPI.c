@@ -74,9 +74,20 @@ int main(int argc, char*argv[])
         {
             for( ncntr=0;ncntr<n;ncntr++)
             {
-                lifArr [m][n] = random01();
+                lifArr [mcntr][ncntr] = random01();
             }
         }  
+        // disp array
+        for(mcntr=0; mcntr < m ;mcntr++  )
+        {
+            for( ncntr=0;ncntr<n;ncntr++)
+            {
+                printf(" %d ",lifArr [mcntr][ncntr]);// = random01();
+            }
+            printf("\n");
+        }
+
+
         //struct slicevars sv;
         sv.k       =k       ;
         sv.m       =m       ;
@@ -92,8 +103,13 @@ int main(int argc, char*argv[])
         }
         // chop up the array and send it
         int procSlice [slicecnt][n];
-        msterData = (int**)  malloc(sizeof( int *) * slicecnt + sizeof(int) *n * slicecnt);
-        
+        //msterData = (int**)  malloc(sizeof( int *) * slicecnt + sizeof(int) *n * slicecnt);
+        msterData = (int**)malloc(sizeof( int *) *slicecnt);
+        int arrdim =0;
+        for( ;arrdim<slicecnt;arrdim++)
+        {
+            msterData[arrdim] = (int *)malloc ( n * sizeof(int));
+        }
         
         
         printf( "- 5A - \n");
@@ -110,8 +126,10 @@ int main(int argc, char*argv[])
                     }else
                     {
                         printf( "- 5init beg - \n");
-                        printf( "\n |%d| |%d|\n",slcntr, ncntr  );
+                        printf( "\n |%d| |%d| |%d|\n",slcntr, ncntr , slicecnt );
                         msterData[slcntr][ncntr] = lifArr[slcntr  ][ncntr];
+                        printf("LL %d LL", msterData[slcntr][ncntr]);
+                        
                         printf( "- 5init - \n");
                     }
                     
@@ -121,12 +139,16 @@ int main(int argc, char*argv[])
             int sliceSize = n* slicecnt;
             printf( "- MPI_Send(&procSlice, sliceSize,MPI_INT,  rnkcnt,1,MPI_COMM_WORLD); - \n");
             if (rnkcnt>0){
+                printf("|%d %d |", rank, rnkcnt);
                 MPI_Send(&procSlice, sliceSize,MPI_INT,  rnkcnt,1,MPI_COMM_WORLD);
             }
+            printf( "SDSDSDSDSDSDS - \n");
         }
+        printf( "AAAAAAAAAAAAAAAA- \n");
     }// end master initializing
-    MPI_Barrier(MPI_COMM_WORLD);
-    printf("rnk %d ---after mster", rank);
+    printf("rnk AAAAAAAAAAAAA ---Before Barr mster" );
+    
+    printf("rnk VVVVVVVVVVVVVVVVVV ---after mster");
     
     if(rank!=MASTER)
     {
@@ -159,6 +181,7 @@ int main(int argc, char*argv[])
     int sendUp[n]; // send top to rank above
     int getDown[n]; //get item from below rank
     int getUp[n];  //get item from above rank
+    MPI_Barrier(MPI_COMM_WORLD);
     for ( lifecyclecnt=0;lifecyclecnt<sv.k;++lifecyclecnt)
     {
         //send bottom row down
@@ -277,6 +300,8 @@ int main(int argc, char*argv[])
 
 int random01()
 {
-    return ( rand() % ( 2) );
+    int rv = ( rand() % ( 2) );
+    printf( "RAND -%d \n" ,rv); 
+    return ( rv);
 }
 
