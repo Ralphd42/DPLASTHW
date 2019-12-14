@@ -117,7 +117,9 @@ int main(int argc, char*argv[])
             }
             int sliceSize = n* slicecnt;
             printf( "- MPI_Send(&procSlice, sliceSize,MPI_INT,  rnkcnt,1,MPI_COMM_WORLD); - \n");
-            MPI_Send(&procSlice, sliceSize,MPI_INT,  rnkcnt,1,MPI_COMM_WORLD);
+            if (rnkcnt>0){
+                MPI_Send(&procSlice, sliceSize,MPI_INT,  rnkcnt,1,MPI_COMM_WORLD);
+            }
         }
     }
     
