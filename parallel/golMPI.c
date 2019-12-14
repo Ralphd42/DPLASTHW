@@ -109,7 +109,9 @@ int main(int argc, char*argv[])
                         procSlice [slcntr][ncntr] = lifArr[slcntr + (rnkcnt * slicecnt) ][ncntr];
                     }else
                     {
+                        printf( "- 5init beg - \n");
                         msterData[slcntr][ncntr] = lifArr[slcntr + (rnkcnt * slicecnt) ][ncntr];
+                        printf( "- 5init - \n");
                     }
                     
                 }
