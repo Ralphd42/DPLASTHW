@@ -110,7 +110,7 @@ int main(int argc, char*argv[])
                     }else
                     {
                         printf( "- 5init beg - \n");
-                        msterData[slcntr][ncntr] = lifArr[slcntr + (rnkcnt * slicecnt) ][ncntr];
+                        msterData[slcntr][ncntr] = lifArr[slcntr  ][ncntr];
                         printf( "- 5init - \n");
                     }
                     
@@ -124,6 +124,7 @@ int main(int argc, char*argv[])
             }
         }
     }// end master initializing
+    MPI_Barrier(MPI_COMM_WORLD);
     printf("rnk %d ---after mster", rank);
     
     if(rank!=MASTER)
