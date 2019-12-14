@@ -110,6 +110,7 @@ int main(int argc, char*argv[])
                     }else
                     {
                         printf( "- 5init beg - \n");
+                        printf( "%d %d",slcntrm ncntr  );
                         msterData[slcntr][ncntr] = lifArr[slcntr  ][ncntr];
                         printf( "- 5init - \n");
                     }
