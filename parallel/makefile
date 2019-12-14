@@ -1,7 +1,7 @@
 CC = mpicc
 CFLAGS =  
 LDFLAGS =
-OBJFILES = gol.o 
+OBJFILES = golMPI.o 
 TARGET = part_1_parallel.out
 all: $(TARGET)
 $(TARGET): $(OBJFILES)

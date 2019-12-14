@@ -18,8 +18,8 @@ struct slicevars
 
 
 int random01();
-void PrintArray( int * arr, int m, int n);
-int numLiveNeighbors(int * arr, int currm,int currn, int m,int n);
+ 
+ 
 int main(int argc, char*argv[])
 {
     int rc;
@@ -28,8 +28,6 @@ int main(int argc, char*argv[])
     int m,n;
     int k;
     int slicecnt;
-
-
     rc =MPI_Init(&argc,&argv);
     if(rc!=MPI_SUCCESS)
     {
@@ -44,7 +42,6 @@ int main(int argc, char*argv[])
         /*
             master will handle slicing the array and splitting between slaves
             1) do we have a valid number of processors
-        
             MPI_Send (&buf,count,datatype,dest,tag,comm)
         */
        if(argc <4)
@@ -58,19 +55,19 @@ int main(int argc, char*argv[])
         n = atoi(argv[2]);
         k = atoi(argv[3]);
         slicecnt = m/num_proc;
-
-
-       if( m%num_proc!=0      )
-       {
-           printf("Please choose number values so that m%np =0");
+        printf( "Num PROC %d\n\n     ", num_proc);
+        if( m%num_proc!=0      )
+        {
+           printf("Please choose number values so that m mod np =0");
            MPI_Finalize();
            exit(0);
         }
-        
+        printf( "- 1 - \n");
         //build arrays
         int lifArr [m][n];
-        int ncntr;
+        int ncntr, mcntr;
         srand(time(NULL));
+        printf( "- 2 - \n");
         for(mcntr=0; mcntr < m ;mcntr++  )
         {
             for( ncntr=0;ncntr<n;ncntr++)
@@ -79,20 +76,21 @@ int main(int argc, char*argv[])
             }
         }  
         struct slicevars sv;
-
         sv.k       =k       ;
         sv.m       =m       ;
         sv.n       =n       ;
         sv.slicecnt=slicecnt;
         // send this to all threads
         int rnkcnt;
-        for(rnkcnt=0;rnccnt< num_proc;++rnkcnt)
+        printf( "- 3 - \n");
+        for(rnkcnt=0;rnkcnt< num_proc;++rnkcnt)
         {
-             
             MPI_Send(&sv, sizeof(sv), MPI_BYTE, rnkcnt, 0, MPI_COMM_WORLD);
+            printf( "- 4A - \n");
         }
         // chop up the array and send it
         int procSlice [slicecnt][n];
+        printf( "- 5A - \n");
         for(rnkcnt=0;rnkcnt< num_proc;++rnkcnt)
         {
             int slcntr;
@@ -100,10 +98,11 @@ int main(int argc, char*argv[])
             {
                 for( ncntr=0;ncntr<n;ncntr++)
                 {
-                    procSlice [slcntr][ncntr] = lifArr[slcntr + (rnkcnt * slicecnt)      ][ncntr];
+                    procSlice [slcntr][ncntr] = lifArr[slcntr + (rnkcnt * slicecnt) ][ncntr];
                 }
             }
             int sliceSize = n* slicecnt;
+            printf( "- MPI_Send(&procSlice, sliceSize,MPI_INT,  rnkcnt,1,MPI_COMM_WORLD); - \n");
             MPI_Send(&procSlice, sliceSize,MPI_INT,  rnkcnt,1,MPI_COMM_WORLD);
         }
     }
@@ -115,11 +114,6 @@ int main(int argc, char*argv[])
     MPI_Recv(&rnkSlice, sliceSize , MPI_INT, 0, 1, MPI_COMM_WORLD,&status);
     // run the game
     int lifecyclecnt =0;
-    
-    //
-
-    // need arrays to hold items from other ranks
-
     int sendDown[n]; // send bottom to rank belo
     int sendUp[n]; // send top to rank above
     int getDown[n]; //get item from below rank
@@ -136,7 +130,7 @@ int main(int argc, char*argv[])
                 sendDown[ncntr] = rnkSlice[sv.slicecnt-1][ncntr];
             }
             MPI_Send(&sendDown, sliceSize,MPI_INT,  (rank+1),1,MPI_COMM_WORLD);
-            MPI_Recv(&getDown, n, MPI_INT,rank+1,MPI_COMM_WORLD,&status);
+            MPI_Recv(&getDown, n, MPI_INT,rank+1,1,MPI_COMM_WORLD,&status);
         }
         //send top row up
         // all except first
@@ -147,31 +141,37 @@ int main(int argc, char*argv[])
                 sendUp[ncntr] = rnkSlice[0][ncntr];
             }
             MPI_Send(&sendUp, sliceSize,MPI_INT,  (rank-1),1,MPI_COMM_WORLD);
-            MPI_Recv(&getUp, n, MPI_INT,rank-1,MPI_COMM_WORLD,&status);
+            MPI_Recv(&getUp, n, MPI_INT,rank-1,1,MPI_COMM_WORLD,&status);
         }
         int sliceRowcntr;
         int sliceColCntr;
         for(sliceRowcntr=0; sliceRowcntr<sv.slicecnt;++sliceRowcntr         )
         {
+            
             for(sliceColCntr=0;sliceColCntr<n;++sliceColCntr)
             {
                 int livecnt =0;
-                //the fun part find out how many alive cells surround the current cell
-                //special case has no top row
-                
-                //most of the cases
                 if( 
                     sliceRowcntr>0 && 
-                    sliceColCntr>0 && 
-                    sliceRowcntr<(  sv.slicecnt-1   ) &&
-                    sliceColCntr<(sv.n-1)
+                    //sliceColCntr>0 && 
+                    sliceRowcntr<(  sv.slicecnt-1   ) 
+                    //sliceColCntr<(sv.n-1)
                 )
                 {
-                    int r;
-                    int c;
-                    for(r=sliceRowcntr; r<=(sliceRowcntr+1); ++r     )
+                    int c =sliceColCntr-1;
+                    if (c<0)
                     {
-                        for(c=sliceColCntr; c<=(sliceColCntr+1); ++c     )
+                        c=0;
+                    }
+                    int cend =sliceColCntr+1;
+                    if( cend>sv.n)
+                    {
+                        cend =sv.n;
+                    }
+                    int r;
+                    for(r=(sliceRowcntr-1); r<=(sliceRowcntr+1); ++r     )
+                    {
+                        for(c=sliceColCntr; c<=cend; ++c     )
                         {
                             if( r!= sliceRowcntr && 
                                 c != sliceColCntr &&  
@@ -182,109 +182,51 @@ int main(int argc, char*argv[])
                             }
                         }
                     }
-                }else if (sliceRowcntr==0)
-                { //bottom
-                    // need to use bottom then others
-
-
                 }
-                
-                
-                
-                if( rank==MASTER){
-                    
+                // determine life of cell
+                {
+                    if (livecnt<=1 || livecnt>=4)
+                    {
+                         rnkSlice[sliceRowcntr][sliceColCntr]  =0;// dies
+                    }
+                    if( livecnt==2 || livecnt ==3)
+                    {
+                        rnkSlice[sliceRowcntr][sliceColCntr] =1; // Cell comes back to life
+                    }
                 }
-                // special case has no bottom
-                if(rank ==num_proc-1)
-                {}
-
-                for(      )
-
-
-
-
-
-
-
-
-
             }
         }
-        
+        if(debug)
+        {
+            if (rank==MASTER) 
+	        {
+            // display then get rest
+                int r,c =0;
+                for(;r<sv.slicecnt;++r)
+                {
+                    for(;c<sv.n;++c)
+                    {
+                    // output here
+                    }
+                }
+                int irnkcnt=0;
+                for(;irnkcnt<num_proc;++irnkcnt )
+                {
+                    int recvSlice[sv.slicecnt][sv.n];  
+                    MPI_Recv(&recvSlice,sv.n * sv.slicecnt,MPI_INT, irnkcnt,1,MPI_COMM_WORLD,&status);
+                }
 
-        // get top row all excpt first
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            }else
+            {
+            // your not master
+            // send to master
+            }
+        }
     }
-
 }
 
 int random01()
 {
     return ( rand() % ( 2) );
 }
-void PrintArray( int * arr, int m, int n)
-{
-    int mcntr;
-    int ncntr;
 
-    for( mcntr=0; mcntr<m;++mcntr)
-    {
-        for( ncntr =0; ncntr <n; ++ncntr)
-        {
-           // printf("%d " ,*(arr + mcntr*m + ncntr    ));
-        }
-        printf("\n");
-    }
-}
-int numLiveNeighbors(int * arr, int currm,int currn, int m, int n)
-{
-    int livecount =0;
-    int mcntr;
-    mcntr = currm-1;
-    if (mcntr<0)
-    {
-        mcntr =0;
-    }
-    int ncntr = currn-1;
-    if( ncntr<0)
-    {
-        ncntr =0;
-    }
-    int  mend =currm+1;
-    if (mend>=m)
-    {
-        mend = currm;
-    }
-    int  nend =currn+1;
-    if (nend>=n)
-    {
-        nend = currn;
-    }
-    for( ;mcntr<mend; ++mcntr )
-    {
-        for( ;ncntr<nend; ++ncntr )
-        {
-            if(ncntr!=currn  && mcntr!=currm)
-            {
-                if(*(arr +currm* m + ncntr)==1)
-                {
-                    ++livecount;
-                }
-            }
-        }
-    }
-    return livecount;
-}
