@@ -83,7 +83,7 @@ int main(int argc, char*argv[])
         // send this to all threads
         int rnkcnt;
         printf( "- 3 - \n");
-        for(rnkcnt=0;rnkcnt< num_proc;++rnkcnt)
+        for(rnkcnt=1;rnkcnt< num_proc;++rnkcnt)
         {
             MPI_Send(&sv, sizeof(sv), MPI_BYTE, rnkcnt, 0, MPI_COMM_WORLD);
             printf( "- 4A - \n");
